@@ -61,7 +61,8 @@
             } else {
                 // navigator.mediaDevices.getUserMedia({ video: {height: 100, width: 100}, audio: true })
                 socket.emit("join", roomName.value);
-                navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+                // navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+                navigator.mediaDevices.getUserMedia({ video: true, audio: false })
                 .then((stream) => {
                     userVideo.srcObject = stream;
                     userVideo.onloadedmetadata = () => {
