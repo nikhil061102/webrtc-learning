@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Video Chat App</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.7.3/socket.io.js"></script>
+    <script src="https://cdn.socket.io/socket.io-3.0.1.min.js"></script>
+    <style>
+        #video-chat-form {
+            text-align: center;
+            margin-top: 100px;
+        }
+        #video-chat-form input {
+            padding: 10px;
+            margin: 10px;
+            width: 200px;
+            text-align: center;
+        }
+        #video-chat-form button {
+            padding: 10px;
+            margin: 10px;
+            width: 200px;
+            text-align: center;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        #video-chat-rooms {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 50px;
+        }
+        #video-chat-rooms video {
+            width: 45%;
+            height: 300px;
+        }
+    </style>
+</head>
+<body>
+    <div id="video-chat-form">
+        <h2 class="text">Video Chat App</h2>
+        <input id="roomName" type="text" placeholder="Room Name" />
+        <button id="join">Join</button>
+    </div>
+    <div id="video-chat-rooms">
+        <video id="user-video"></video>
+        <video id="peer-video"></video>
+    </div>
+    <script>
+        const socket = io.connect("http://localhost:4000");
+
+        const join = document.getElementById("join");
+        const roomName = document.getElementById("roomName");
+        const userVideo = document.getElementById("user-video");
+        const peerVideo = document.getElementById("peer-video");
+
+        join.addEventListener("click", () => {
+            if(roomName.value === "") {
+                alert("Please enter a room number");
+            } else {
+                // navigator.mediaDevices.getUserMedia({ video: {height: 100, width: 100}, audio: true })
+                socket.emit("join", roomName.value);
+                navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+                .then((stream) => {
+                    userVideo.srcObject = stream;
+                    userVideo.onloadedmetadata = () => {
+                        userVideo.play();
+                    };
+                    
+                })
+                .catch((error) => {
+                    console.log(error);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
