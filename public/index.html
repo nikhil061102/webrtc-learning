@@ -47,34 +47,6 @@
         <video id="user-video"></video>
         <video id="peer-video"></video>
     </div>
-    <script>
-        const socket = io.connect("http://localhost:4000");
-
-        const join = document.getElementById("join");
-        const roomName = document.getElementById("roomName");
-        const userVideo = document.getElementById("user-video");
-        const peerVideo = document.getElementById("peer-video");
-
-        join.addEventListener("click", () => {
-            if(roomName.value === "") {
-                alert("Please enter a room number");
-            } else {
-                // navigator.mediaDevices.getUserMedia({ video: {height: 100, width: 100}, audio: true })
-                socket.emit("join", roomName.value);
-                // navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-                navigator.mediaDevices.getUserMedia({ video: true, audio: false })
-                .then((stream) => {
-                    userVideo.srcObject = stream;
-                    userVideo.onloadedmetadata = () => {
-                        userVideo.play();
-                    };
-                    
-                })
-                .catch((error) => {
-                    console.log(error);
-                });
-            }
-        });
-    </script>
+    <script type="text/javascript" src="script.js"></script>
 </body>
 </html>
