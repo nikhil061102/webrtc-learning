@@ -5,6 +5,15 @@ const roomName = document.getElementById("roomName");
 const userVideo = document.getElementById("user-video");
 const peerVideo = document.getElementById("peer-video");
 
+let isCreator;
+let myVideo;
+const iceServers = {
+    iceServers: [
+        { urls: "stun:stun.services.mozilla.com" },
+        { urls: "stun:stun.l.google.com:19302" },
+    ],
+};
+
 const startVideoCall = () => {
     // navigator.mediaDevices.getUserMedia({ video: {height: 100, width: 100}, audio: true })
     // navigator.mediaDevices.getUserMedia({ video: true, audio: true })
@@ -18,6 +27,7 @@ const startVideoCall = () => {
     .catch((err) => {
         console.log("Error accessing media devices", err);
     });
+    socket.emit("ready", roomName.value);
 };
 
 join.addEventListener("click", () => {
@@ -31,18 +41,78 @@ join.addEventListener("click", () => {
 socket.on('created', (roomName)=>{
     startVideoCall();
     alert(`Room named ${roomName} created`);
+    isCreator = true;
 });
 socket.on('joined', (roomName)=>{
     startVideoCall();
     alert(`Room named ${roomName} joined`);
+    isCreator = false;
 });
 socket.on('full', (roomName)=>{
     alert(`Room named ${roomName} is full`);
 });
 
-
-
-socket.on('ready', (roomName)=>{});
-socket.on('candidate', (candidate)=>{});
-socket.on('offer', (offer)=>{});
-socket.on('answer', (answer)=>{});
+socket.on('ready', (event)=>{
+    console.log(event)
+    if (isCreator==true){
+        const peerConnection = new RTCPeerConnection(iceServers);        
+        peerConnection.onicecandidate = (event) => {
+            if (event.candidate){
+                socket.emit('candidate', event.candidate, roomName.value);
+            }
+        };
+        peerConnection.ontrack = (event) => {
+            console.log(event)
+            peerVideo.srcObject = event.streams[0];
+            peerVideo.onloadedmetadata = () => {
+                peerVideo.play();
+            };
+        };
+        // for (const track of myVideo.getTracks()) {
+        //     peerConnection.addTrack(track, myVideo);
+        // }
+        peerConnection.addTrack(myVideo.getTracks()[0], myVideo); // for video
+        peerConnection.addTrack(myVideo.getTracks()[1], myVideo); // for audio
+        peerConnection.createOffer(((offer) => {
+            peerConnection.setLocalDescription(offer);
+            socket.emit('offer', offer, roomName);
+        }),(error) => {
+            console.log(error);            
+        });
+    }
+});
+socket.on('candidate', (candidate)=>{
+    const iceCandidate = new RTCIceCandidate(candidate);
+    peerConnection.addIceCandidate(iceCandidate);
+});
+socket.on('offer', (offer)=>{
+    if (isCreator==false){
+        const peerConnection = new RTCPeerConnection(iceServers);        
+        peerConnection.onicecandidate = (event) => {
+            if (event.candidate){
+                socket.emit('candidate', event.candidate, roomName.value);
+            }
+        };
+        peerConnection.ontrack = (event) => {
+            peerVideo.srcObject = event.streams[0];
+            peerVideo.onloadedmetadata = () => {
+                peerVideo.play();
+            };
+        };
+        // for (const track of myVideo.getTracks()) {
+        //     peerConnection.addTrack(track, myVideo);
+        // }
+        peerConnection.addTrack(myVideo.getTracks()[0], myVideo); // for video
+        peerConnection.addTrack(myVideo.getTracks()[1], myVideo); // for audio
+        peerConnection.setRemoteDescription(offer);
+        peerConnection.createAnswer(((answer) => {
+            peerConnection.setLocalDescription(answer);
+            socket.emit('answer', answer, roomName);
+        }),(error) => {
+            console.log(error);            
+        });
+    }
+});
+socket.on('answer', (answer)=>{
+    peerConnection.setRemoteDescription(answer);
+});
