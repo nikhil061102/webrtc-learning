@@ -14,17 +14,15 @@ const iceServers = {
     ],
 };
 
-const startVideoCall = () => {
-    // navigator.mediaDevices.getUserMedia({ video: {height: 100, width: 100}, audio: true })
-    // navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-    navigator.mediaDevices.getUserMedia({ video: true, audio: false })
-    .then((stream) => {
+const startVideoCall = async () => {
+    await navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+    .then(stream => {
         userVideo.srcObject = stream;
         userVideo.onloadedmetadata = () => {
             userVideo.play();
         };
     })
-    .catch((err) => {
+    .catch(err => {
         console.log("Error accessing media devices", err);
     });
     socket.emit("ready", roomName.value);
@@ -52,8 +50,7 @@ socket.on('full', (roomName)=>{
     alert(`Room named ${roomName} is full`);
 });
 
-socket.on('ready', (event)=>{
-    console.log(event)
+socket.on('ready', ()=>{
     if (isCreator==true){
         const peerConnection = new RTCPeerConnection(iceServers);        
         peerConnection.onicecandidate = (event) => {
@@ -61,24 +58,19 @@ socket.on('ready', (event)=>{
                 socket.emit('candidate', event.candidate, roomName.value);
             }
         };
-        peerConnection.ontrack = (event) => {
-            console.log(event)
+        peerConnection.ontrack = event => {
             peerVideo.srcObject = event.streams[0];
             peerVideo.onloadedmetadata = () => {
                 peerVideo.play();
             };
         };
-        // for (const track of myVideo.getTracks()) {
-        //     peerConnection.addTrack(track, myVideo);
-        // }
-        peerConnection.addTrack(myVideo.getTracks()[0], myVideo); // for video
-        peerConnection.addTrack(myVideo.getTracks()[1], myVideo); // for audio
-        peerConnection.createOffer(((offer) => {
+        for (const track of peerVideo.getTracks()) {
+            peerConnection.addTrack(track, peerVideo);
+        }
+        peerConnection.createOffer((offer => {
             peerConnection.setLocalDescription(offer);
             socket.emit('offer', offer, roomName);
-        }),(error) => {
-            console.log(error);            
-        });
+        }),(error => console.log(error)));
     }
 });
 socket.on('candidate', (candidate)=>{
@@ -99,11 +91,9 @@ socket.on('offer', (offer)=>{
                 peerVideo.play();
             };
         };
-        // for (const track of myVideo.getTracks()) {
-        //     peerConnection.addTrack(track, myVideo);
-        // }
-        peerConnection.addTrack(myVideo.getTracks()[0], myVideo); // for video
-        peerConnection.addTrack(myVideo.getTracks()[1], myVideo); // for audio
+        for (const track of myVideo.getTracks()) {
+            peerConnection.addTrack(track, myVideo);
+        }
         peerConnection.setRemoteDescription(offer);
         peerConnection.createAnswer(((answer) => {
             peerConnection.setLocalDescription(answer);
